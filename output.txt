@@ -1,0 +1,114 @@
+gxemul -T -C R3000 -M 64 -E testmips -d 0:target/fs.img -d 1:myFS/fat.img target/mos
+GXemul 0.7.0+dfsg    Copyright (C) 2003-2021  Anders Gavare
+Read the source code and/or documentation for other Copyright messages.
+
+net: 
+    simulated network: 
+        10.0.0.0/8 (max outgoing: TCP=100, UDP=100)
+        gateway+nameserver: 10.0.0.254 (60:50:40:30:20:10)
+        nameserver uses real nameserver 202.112.128.51
+machine: 
+    model: MIPS test machine
+    cpu: R3000 (32-bit, I+D = 4+4 KB, L2 = 0 KB)
+    memory: 64 MB
+    diskimage: target/fs.img
+        IDE DISK id 0, read/write, 4 MB (9072 512-byte blocks)
+    diskimage: myFS/fat.img
+        IDE DISK id 1, read/write, 33 MB (68544 512-byte blocks)
+    file: loading target/mos
+    cpu0: starting at 0x800119b0 <_start>
+-------------------------------------------------------------------------------
+
+init.c:	mips_init() is called
+Memory size: 65536 KiB, number of pages: 16384
+to memory 80430000 for struct Pages.
+pmap.c:	 mips vm init success
+FS is running
+superblock is good
+read_bitmap is good
+FAT32   
+fat_readBPB is good
+read_FAT is good
+read_FSInfo is good
+================================
+Total free Cluster Count:0x000103c5
+Next Available Cluster Number:0x00000007
+================================
+read & write cluster is good
+================================
+fat32_init success!
+================================
+test build passed
+test write passed
+test close passed
+test reopen passed
+test read passes
+test close again passed
+test remove passed
+test challenge passed!
+================================
+this is the message of test
+this is the second message of test
+Now this is the lyrics
+================================
+Lavender Haze
+
+Taylor Swift
+
+Meet me at midnight
+Oooh oooh oooh woah
+Oooh oooh oooh woah
+Staring at the ceiling with you
+Oh you don't ever say too much
+And you don't really read into
+My melancholia
+I been under scrutiny (yeah oh yeah)
+You handle it beautifully (yeah oh yeah)
+All this **** is new to me (yeah oh yeah)
+I feel the lavender haze creeping up on me
+Surreal
+I'm damned if I do give a damn what people say
+No deal
+The 1950s **** they want from me
+I just wanna stay in that lavender haze
+Oooh oooh oooh woah
+Oooh oooh oooh woah
+All they keep asking me (all they keep asking me)
+Is if I'm gonna be your bride
+Surreal
+I'm damned if I do give a damn what people say
+No deal
+The 1950s **** they want from me
+I just wanna stay in that lavender haze
+(Oooh Oooh Oooh Woah)
+The lavender haze
+Talk your talk and go viral
+I just need this love spiral
+Get it off your chest
+Get it off my desk
+Talk your talk and go viral
+I just need this love spiral
+Get it off your chest
+Get it off my desk
+I feel the lavender haze creeping up on me
+Surreal
+I'm damned if I do give a damn what people say
+No deal
+The 1950s **** they want from me
+I just wanna stay in that lavender haze
+Oooh oooh oooh woah
+Oooh oooh oooh woah
+Get it off your chest
+Get it off my desk
+The lavender haze
+I just wanna stay
+I just wanna stay
+In that lavender haze
+[00000800] destroying 00000800
+[00000800] free env 00000800
+i am killed ... 
+panic at sched.c:40 (schedule): NO RUNNABLE ENV
+ra:    80016b08  sp:  803ffe80  Status: 0008100c
+Cause: 00001020  EPC: 00405fb0  BadVA:  00414000
+curenv:    NULL
+cur_pgdir: 83ffc000
