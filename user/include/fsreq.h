@@ -14,6 +14,9 @@
 #define FSREQ_REMOVE 6
 #define FSREQ_SYNC 7
 #define FSREQ_FLUSH_FAT 8
+#define FSREQ_OPENAT 9
+#define FSREQ_REMOVEAT 10
+#define FSREQ_GET 11
 #define FSREQ_FAT 0x10000
 
 struct Fsreq_open {
@@ -50,5 +53,18 @@ struct Fsreq_flush_Fat32 {
 	u_int req_len;
 	char content[BY2PG - 3 * sizeof(u_int)];
 };
+
+struct Fsreq_openat {
+	u_int dir_fileid;
+	char req_path[MAXPATHLEN];
+	u_int req_omode;
+ };
+
+
+struct Fsreq_removeat {
+	u_int dir_fileid;
+	char req_path[MAXPATHLEN];
+ };
+
 
 #endif

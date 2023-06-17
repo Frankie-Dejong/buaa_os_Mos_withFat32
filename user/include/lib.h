@@ -109,6 +109,9 @@ int fsipc_dirty_Fat32(u_int, u_int);
 int fsipc_remove_Fat32(const char *);
 int fsipc_sync_Fat32(void);
 int fsipc_flush_Fat32(u_int, u_int, u_int, void *);
+int fsipc_openat_Fat32(u_int dir_fileid, const char *path, u_int omode, struct Fd *fd);
+int fsipc_removeat_Fat32(int fd, const char *path);
+int fsipc_get_BY2CLUS();
 
 // fd.c
 int close(int fd);

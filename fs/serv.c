@@ -312,6 +312,18 @@ void serve_remove_Fat32(u_int envid, struct Fsreq_remove *rq) {
 	ipc_send(envid, r, 0, 0);
 }
 
+void serve_removeat_Fat32(u_int envid, struct Fsreq_removeat *rq) {
+	int r;
+	struct Fat32_Open *pOpen;
+	if ((r = fat_open_lookup(envid, rq->dir_fileid + MAXOPEN, &pOpen)) < 0) {
+		ipc_send(envid, r, 0, 0);
+		return;
+	}
+	struct Fat32_Dir *dir = pOpen->o_file;
+	r = fat_file_removeat(dir, rq->req_path);
+	ipc_send(envid, r, 0, 0);
+}
+
 void serve_dirty(u_int envid, struct Fsreq_dirty *rq) {
 	struct Open *pOpen;
 	int r;
@@ -367,6 +379,52 @@ void serve_sync(u_int envid) {
 	ipc_send(envid, 0, 0, 0);
 }
 
+void serve_openat_Fat32(u_int envid, struct Fsreq_openat *rq) {
+	struct Fat32_Dir *f;
+	struct Fat32_Filefd *ff;
+	int r;
+	struct Fat32_Open *o;
+
+	// Find a file id.
+	if ((r = fat_open_alloc(&o)) < 0) {
+		ipc_send(envid, r, 0, 0);
+	}
+
+	struct Fat32_Open *pOpen;
+	if ((r = fat_open_lookup(envid, rq->dir_fileid, &pOpen)) < 0) {
+		ipc_send(envid, r, 0, 0);
+		return;
+	}
+	struct Fat32_Dir *dir = pOpen->o_file;
+
+	// Open the file.
+	if ((r = fat_file_openat(dir, rq->req_path, &f, rq->req_omode)) < 0) {
+		ipc_send(envid, r, 0, 0);
+		return;
+	}
+
+	// Save the file pointer.
+	o->o_file = f;
+
+	// Fill out the Filefd structure
+	ff = (struct Fat32_Filefd *)o->o_ff;
+	ff->f_file = *f;
+	ff->f_fileid = o->o_fileid;
+	o->o_mode = rq->req_omode;
+	ff->f_fd.fd_omode = o->o_mode;
+	ff->f_fd.fd_dev_id = devfile.dev_id;
+	ff->f_fd.fd_fat = 1;
+
+	ipc_send(envid, 0, o->o_ff, PTE_D | PTE_LIBRARY);
+
+}
+
+
+void serve_BPB(u_int envid) {
+	ipc_send(envid, BY2CLUS, 0, 0);
+}
+
+
 void serve(void) {
 	u_int req, whom, perm;
 
@@ -409,7 +467,19 @@ void serve(void) {
 		case FSREQ_FAT | FSREQ_REMOVE:
 			serve_remove_Fat32(whom, (struct Fsreq_remove *)REQVA);
 			break;
+		
+		case FSREQ_OPENAT:
+			serve_openat_Fat32(whom, (struct Fsreq_openat *)REQVA);
+			break;
 
+		case FSREQ_REMOVEAT:
+			serve_removeat_Fat32(whom, (struct Fsreq_removeat *)REQVA);
+			break;
+		
+		case FSREQ_GET:
+			serve_BPB(whom);
+			break;
+		
 		case FSREQ_OPEN:
 			serve_open(whom, (struct Fsreq_open *)REQVA);
 			break;

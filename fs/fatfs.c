@@ -194,6 +194,8 @@ int dirty_cluster(u_int clusno) {
         return 0;
     }
 
+    write_cluster(clusno);
+
     return syscall_mem_map(0, alignedVa, 0, alignedVa, PTE_D | PTE_DIRTY);
 }
 
@@ -343,7 +345,6 @@ void fat_readBPB()
     fat_super.FAT_endNumber = (parameter[510] << 8) + (parameter[511] & 0xff);
     
     user_assert(fat_super.FAT_endNumber == FAT_BPB_END_NUMBER);
-    debugf("%s\n", fat_super.FSType);
     user_assert(strcmp(fat_super.FSType, "FAT32   ") == 0);
     debugf("fat_readBPB is good\n");
     return 0;
@@ -411,7 +412,6 @@ int read_cluster(u_int clusno, void **cluster, u_int *isnew) {
     if(FAT1) {
         if(isData(clusno) && fat_clus_is_free(Clusno2Data(clusno)))
         {
-            debugf("0x%x\n", Clusno2Data(clusno));
             user_panic("reading free cluster %08x\n", clusno);
         }
     }
@@ -518,6 +518,7 @@ int fat_dir_lookup(struct Fat32_Dir *pdir, char *name, struct Fat32_Dir ** file,
         check = 1;
         for(int i = 0;i < BY2CLUS / sizeof(struct Fat32_Dir);i ++)
         {
+            
             struct Fat32_Dir *cur = dir + i;
             if(cur->Attr & ATTR_LONG_NAME) {
                 struct Fat32_LDIR *cur_ = (struct Fat32_LDIR *)cur;
@@ -528,17 +529,28 @@ int fat_dir_lookup(struct Fat32_Dir *pdir, char *name, struct Fat32_Dir ** file,
             } else if(cmpFileName(cur->Name, name) == 0 || check == 0) {
                 u_int targetClusNO = file_get_dataClusNO(cur);
                 *entry = cur;
-                *file = (struct Fat32_Dir *)read_data_cluster(targetClusNO);
+                if(file != 0) {
+                    *file = (struct Fat32_Dir *)read_data_cluster(targetClusNO);
+                }                
                 return 0;
             }
         }
         dataClusNo = FAT1[dataClusNo];
+
     } while(dataClusNo != EOF_Fat32);
     return -E_NOT_FOUND;
 }
 
 int fat_dir_lookup_all(struct Fat32_Dir *pdir, char *name) {
-    u_int dataClusNo = Clusno2Data(va2ClusNo(pdir));
+    u_int dataClusNo;
+    if(pdir == NULL) {
+        dataClusNo = fat_super.RootClus;
+    } else {
+        dataClusNo = file_get_dataClusNO(pdir);
+    }
+    if(dataClusNo == 0) {
+        return 0;
+    }
     u_int shot = 0;
     do {
         struct Fat32_Dir *dir = (struct Fat32_Dir *)read_data_cluster(dataClusNo);
@@ -768,6 +780,74 @@ int fat_walk_path(char *path, struct Fat32_Dir **pdir, struct Fat32_Dir **pfile,
     return 0;
 }
 
+
+int fat_walk_path_at(struct Fat32_Dir *par_dir, char *path, struct Fat32_Dir **pdir, struct Fat32_Dir **pfile, char *lastelem) {
+    char *p;
+    char name[MAXNAMELEN];
+    struct Fat32_Dir *dir, *file, *entry = NULL;
+    int r;
+    path = skip_root(path);
+    path = fat_skip_slash(path);
+    file = (struct Fat32_Dir *)read_data_cluster(file_get_dataClusNO(par_dir));
+    dir = par_dir;
+    name[0] = 0;
+
+    if(pdir) {
+        *pdir = 0;
+    }
+
+    *pfile = 0;
+    while(*path != '\0') {
+        dir = file;
+        p = path;
+        while (*path != '/' && *path != '\0') {
+            path ++;
+        }
+        if(*path == '/') {
+            path ++;
+        }
+        if(path - p > MAXNAMELEN) {
+            return -E_BAD_PATH;
+        }
+        for(int i = 0;i < path - p;i ++)
+        {
+            name[i] = p[i];
+        }
+        if(name[path - p - 1] == '/') {
+            name[path - p - 1] = '\0';
+        }
+        name[path - p] = '\0';
+        if((entry != 0) && ((entry->Attr & ATTR_DIRECTORY) == 0)) {
+            return -E_NOT_FOUND;
+        }
+
+        if((r = fat_dir_lookup(dir, name, &file, &entry)) < 0) {
+            if(r == -E_NOT_FOUND && *path == '\0') {
+                if(pdir) {
+                    *pdir = dir;
+                }
+
+                if(lastelem) {
+                    strcpy(lastelem, name);
+                }
+
+                *pfile = 0;
+            }
+
+            return r;
+        }
+        
+    }
+
+    if(pdir) {
+        *pdir = ROUNDDOWN(entry, BY2CLUS);
+    }
+    *pfile = entry;
+    return 0;
+}
+
+
+
 void spiltPath(char *path, char *parent, char *this) {
     int i, j;
     for(i = strlen(path); path[i] != '/'; i --) ;
@@ -885,9 +965,6 @@ int fat_alloc_LongNameFile(char *this, struct Fat32_Dir *dir, struct Fat32_Dir *
         return 0;
     }
 
-
-
-
     if(r < 0) {
         total ++;
         fat_walk_cluster(dir, total, &newClusNo, 1);
@@ -897,7 +974,7 @@ int fat_alloc_LongNameFile(char *this, struct Fat32_Dir *dir, struct Fat32_Dir *
     
     struct Fat32_LDIR *cur_ = (struct Fat32_LDIR *)cur;
 
-    getFileName_(this, tmp, file);
+    getFileName_(this, tmp, dir);
     cur_->LDIR_Attr = ATTR_LONG_NAME;
     cur_->LDIR_Ord = LAST_LONG_ENTRY | needEntry;
     cur_->LDIR_Chksum = ChkSum(tmp);
@@ -947,7 +1024,7 @@ int fat_alloc_LongNameDir(char *this, struct Fat32_Dir *dir, struct Fat32_Dir *f
     
     struct Fat32_LDIR *cur_ = (struct Fat32_LDIR *)cur;
 
-    getFileName_(this, tmp, file);
+    getFileName_(this, tmp, dir);
     cur_->LDIR_Attr = ATTR_LONG_NAME;
     cur_->LDIR_Ord = LAST_LONG_ENTRY | needEntry;
     cur_->LDIR_Chksum = ChkSum(tmp);
@@ -1016,6 +1093,132 @@ int fat_alloc_file(char *path) {
     dirty_cluster(va2ClusNo(cur));
     return 0;
 }
+
+
+int fat_alloc_file_at(char *path, struct Fat32_Dir *par_dir) {
+    int r;
+    struct Fat32_Dir *dir, *file;
+    char this[MAXPATHLEN];
+    u_int totalClus, newClusNo;
+    
+    strcpy(this, path);
+    dir = par_dir;
+
+    totalClus = fat_total_clus(dir);
+
+
+    file = (struct Fat32_Dir *)read_data_cluster(file_get_dataClusNO(dir));
+
+    
+    if(fat_needLN(this)) {
+        return fat_alloc_LongNameFile(this, dir, file, totalClus);
+    }
+    
+    struct Fat32_Dir *cur = NULL;
+    
+    if((r = fat_free_dir_lookup(file, &cur, this)) < 0) {
+        totalClus ++;
+        fat_walk_cluster(dir, totalClus, &newClusNo, 1);
+        cur = (struct Fat32_Dir *)read_data_cluster(newClusNo);
+    }
+    if(r == 0 && cur == NULL) {
+        return 0;
+    }
+    user_assert(cur != NULL);
+    setTime(cur, 1);
+    getFileName(this, cur->Name); 
+    cur->FileSize = 0;
+    cur->Attr = ATTR_ARCHIVE;
+    memset(cur->ClusHI, 0, 2);
+    memset(cur->ClusLO, 0, 2);
+    dirty_cluster(va2ClusNo(cur));
+    return 0;
+}
+
+int fat_alloc_dir_at(char *path, struct Fat32_Dir *par_dir) {
+    int r;
+    struct Fat32_Dir *dir = par_dir;
+    struct Fat32_Dir *file;
+    char parentDir[MAXPATHLEN];
+    char this[MAXPATHLEN];
+    u_int totalClus, newClusNo;
+    strcpy(this, path);
+
+
+    file = (struct Fat32_Dir *)read_data_cluster(file_get_dataClusNO(dir));
+    
+    struct Fat32_Dir *cur = NULL;
+    
+    totalClus = fat_total_clus(dir);
+
+    if(fat_needLN(this)) {
+        r = fat_alloc_LongNameDir(this, dir, file, totalClus, &cur);
+        if(r == 0 && cur == NULL) {
+            return 0;
+        }
+    } else {
+        if ((r = fat_free_dir_lookup(file, &cur, this)) < 0)
+        {
+            totalClus++;
+            fat_walk_cluster(dir, totalClus, &newClusNo, 1);
+            cur = (struct Fat32_Dir *)read_data_cluster(newClusNo);
+        }
+        if(r == 0 && cur == NULL) {
+            return 0;
+        }
+        user_assert(cur != NULL);
+        getFileName(this, cur->Name); 
+    }
+
+    cur->FileSize = 0;
+    cur->Attr = ATTR_DIRECTORY;
+    
+    setTime(cur, 1);
+
+    int dataClusNo = fat_alloc_cluster();
+    cur->ClusHI[1] = (dataClusNo & (0xff << 24)) >> 24;
+    cur->ClusHI[0] = (dataClusNo & (0xff << 16)) >> 16;
+    cur->ClusLO[1] = (dataClusNo & (0xff << 8)) >> 8;
+    cur->ClusLO[0] = dataClusNo & 0xff;
+    
+    file = (struct Fat32_Dir *)read_data_cluster(dataClusNo);
+    file->FileSize = 0;
+    file->Attr = ATTR_DIRECTORY;
+    memset(file->Name, 32, 11);
+    file->Name[0] = '.';
+    file->ClusHI[1] = cur->ClusHI[1];
+    file->ClusHI[0] = cur->ClusHI[0];
+    file->ClusLO[1] = cur->ClusLO[1];
+    file->ClusLO[0] = cur->ClusLO[0];
+    user_assert(file_get_dataClusNO(file) == file_get_dataClusNO(cur));
+
+    setTime(file, 1);
+
+    file ++;
+
+    file->FileSize = 0;
+    file->Attr = ATTR_DIRECTORY;
+    memset(file->Name, 32, 11);
+    file->Name[0] = '.';
+    file->Name[1] = '.';
+    if(dir == NULL) {
+        memset(file->ClusHI, 0, 2);
+        memset(file->ClusLO, 0, 2);
+        user_assert(file_get_dataClusNO(file) == 0);
+    } else {
+        file->ClusHI[1] = dir->ClusHI[1];
+        file->ClusHI[0] = dir->ClusHI[0];
+        file->ClusLO[1] = dir->ClusLO[1];
+        file->ClusLO[0] = dir->ClusLO[0];
+        user_assert(file_get_dataClusNO(file) == file_get_dataClusNO(dir));
+    }
+
+    setTime(file, 1);
+    dirty_cluster(va2ClusNo(cur));
+    dirty_cluster(Data2ClusNO(dataClusNo));
+    return 0;
+}
+
 
 int fat_alloc_dir(char *path) {
     int r;
@@ -1135,6 +1338,36 @@ int fat_file_open(char *path, struct Fat32_Dir **pfile, int omode) {
     return r;
 }
 
+
+int fat_file_openat(struct Fat32_Dir *dir, char *path, struct Fat32_Dir **pfile, int omode) {
+    int r;
+    if((dir->Attr & ATTR_DIRECTORY) == 0) {
+        return -E_INVAL;
+    }
+    switch (omode & 0xff00)
+    {
+    case O_CREAT:
+        if((r = fat_alloc_file_at(path, dir)) < 0 ){
+            return r;
+        }
+        break;
+    case O_MKDIR:
+        if((r = fat_alloc_dir_at(path, dir)) < 0 ){
+            return r;
+        }
+        break;
+    default:
+        break;
+    }
+
+    r = fat_walk_path_at(dir, path, 0, pfile, 0);
+    return r;
+}
+
+
+
+
+
 int dirty_page(int beginClus) {
     int r;
     u_int dataClusNo = beginClus;
@@ -1170,6 +1403,9 @@ int fat_file_dirty(struct Fat32_Dir *f, u_int offset) {
 
 void fat_file_flush(struct Fat32_Dir *f) {
     u_int dataClusNo = file_get_dataClusNO(f);
+    if(dataClusNo == 0) {
+        return;
+    }
     int r;
     do{
         if(fat_clus_is_dirty(dataClusNo)) {
@@ -1194,6 +1430,7 @@ void fat_dir_flush(struct Fat32_Dir *f) {
 
 void fat_file_close(struct Fat32_Dir *f) {
     fat_file_flush(f);
+    fat_dir_dirty(f);
     fat_dir_flush(f);
 }
 
@@ -1212,9 +1449,11 @@ void fat_file_truncate(struct Fat32_Dir *f, u_int newsize) {
         tmp = dataClusNo;
         dataClusNo = FAT1[dataClusNo];
     }
-    
-    FAT1[tmp] = EOF_Fat32;
-    dirty_Fat(tmp);
+
+    if(new_nclusters > 0) {
+        FAT1[tmp] = EOF_Fat32;
+        dirty_Fat(tmp);
+    }
 
     for(i = new_nclusters; i < old_nclusters;i ++) {
         int r = FAT1[dataClusNo];
@@ -1268,6 +1507,7 @@ int fClusNo2Va(struct Fat32_Dir *f, u_int fClusNo, char **va) {
 
 
 int fat_file_writeBack(struct Fat32_Dir *f, u_int offset, u_int n, char *src) {
+    //debugf("%s\n", f->Name);
     u_int dataClusNo = file_get_dataClusNO(f);
     u_int fClusNo = offset / BY2CLUS, curPtr = offset % BY2CLUS, pClusNo = 0;
     setTime(f, 0);
@@ -1290,7 +1530,7 @@ int fat_file_writeBack(struct Fat32_Dir *f, u_int offset, u_int n, char *src) {
             dirty_cluster(va2ClusNo(va));
         }
     }
-
+    fat_dir_dirty(f);
     return 0;
 }
 
@@ -1313,7 +1553,46 @@ int fat_file_remove(char *path) {
         }
         memset(cur_, 0, sizeof(struct Fat32_LDIR));
     }
-    f->Name[0] = '\0';
+    memset(f->Name, '\0', 11);
+    fat_dir_dirty(f);
+    fat_dir_flush(f);
+    return 0;
+}
+
+int fat_file_removeat(struct Fat32_Dir *par_dir, char *path) {
+    int r;
+    struct Fat32_Dir *f;
+    struct Fat32_Dir *dir, *cur;
+    dir = par_dir;
+    
+    if((dir->Attr & ATTR_DIRECTORY) == 0) {
+        
+        return -E_INVAL;
+    }
+
+
+    if((r = fat_dir_lookup(read_data_cluster(file_get_dataClusNO(par_dir)), path, 0, &f)) < 0) {
+        return r;
+    }
+    
+
+    if(f->FileSize > 0) {
+        fat_file_truncate(f, 0);
+    }
+    
+
+    for(int i = f - dir - 1;i >= 0;i --)
+    {
+        cur = dir + i;
+        struct Fat32_LDIR *cur_ = (struct Fat32_LDIR *)cur;
+        if((cur_->LDIR_Attr & ATTR_LONG_NAME) == 0) {
+            break;
+        }
+        //memset(cur_, 0, sizeof(struct Fat32_LDIR));
+        cur->Name[0] = '\0';
+    }
+
+    memset(f->Name, '\0', 11);
     fat_dir_dirty(f);
     fat_dir_flush(f);
     return 0;

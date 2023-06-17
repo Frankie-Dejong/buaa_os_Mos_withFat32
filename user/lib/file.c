@@ -2,7 +2,7 @@
 #include <lib.h>
 
 #define debug 0
-
+int User_BY2CLUS = 0;
 
 static int file_close(struct Fd *fd);
 static int file_read(struct Fd *fd, void *buf, u_int n, u_int offset);
@@ -40,7 +40,10 @@ int isFat32(const char *path) {
 	return 0;
 }
 
-
+void getBY2CLUS() {
+	User_BY2CLUS = fsipc_getBY2CLUS();
+	user_assert(User_BY2CLUS > 0);
+}
 
 
 
@@ -64,15 +67,63 @@ int open_Fat32(const char *path, int mode, struct Fd *fd) {
 	ffd = (struct Fat32_Filefd *) fd;
 	size = ffd->f_file.FileSize;
 	fileid = ffd->f_fileid;
-	for(int i = 0;i < size;i += BY2CLUS) {
+
+	if(User_BY2CLUS == 0) {
+		getBY2CLUS();
+	}
+
+	for(int i = 0;i < size;i += User_BY2CLUS) {
 		r = fsipc_map_Fat32(fileid, i, Fat_buf);
 		if(r < 0) {
 			return r;
 		}
-		memcpy(va + i, Fat_buf, BY2CLUS);
+		memcpy(va + i, Fat_buf, User_BY2CLUS);
 	}
 	return fd2num(fd);
 }
+
+
+int openat(int dirfd, const char *path, int mode) {
+	int r;
+	struct Fd *dir, *fd;
+	fd_alloc(&fd);
+	fd_lookup(dirfd, &dir); 
+	struct Fat32_Filefd *fdir = (struct Fat32_Filefd *)dir;
+	u_int dir_fileid = fdir->f_fileid;
+	r = fsipc_openat_Fat32(dir_fileid, path, mode, fd);
+	if(r < 0) {
+		return r;
+	}
+	char *va;
+	struct Fat32_Filefd *ffd;
+	u_int size, fileid;
+	va = fd2data(fd);
+	ffd = (struct Fat32_Filefd *)fd;
+	size = ffd->f_file.FileSize;
+	fileid = ffd->f_fileid;
+
+	if(User_BY2CLUS == 0) {
+		getBY2CLUS();
+	}
+
+
+	for(int i = 0;i < size;i += User_BY2CLUS) {
+		r = fsipc_map_Fat32(fileid, i, Fat_buf);
+		if(r < 0) {
+			return r;
+		}
+		memcpy(va + i, Fat_buf, User_BY2CLUS);
+	}
+	return fd2num(fd);
+}
+
+
+
+
+
+
+
+
 int open(const char *path, int mode) {
 	int r;
 
@@ -133,14 +184,17 @@ int file_close_Fat(struct Fd *fd) {
 	size = ffd->f_file.FileSize;
 	va = fd2data(fd);
 
+
 	for(i = 0;i < size;i += BY2PG) {
 		fsipc_dirty_Fat32(fileid, i);
 	}
+
 
 	if ((r = fsipc_close_Fat32(fileid)) < 0) {
 		debugf("cannot close the Fat32 file\n");
 		return r;
 	}
+
 
 	if(size == 0) {
 		return 0;
@@ -379,12 +433,17 @@ int ftruncate_Fat(int fdnum, u_int size) {
 	}
 
 	void *va = fd2data(fd);
-	for (i = ROUND(oldsize, BY2CLUS); i < ROUND(size, BY2CLUS); i += BY2CLUS) {
+
+	if(User_BY2CLUS == 0) {
+		getBY2CLUS();
+	}
+
+	for (i = ROUND(oldsize, User_BY2CLUS); i < ROUND(size, User_BY2CLUS); i += User_BY2CLUS) {
 		if ((r = fsipc_map_Fat32(fileid, i, Fat_buf)) < 0) {
 			fsipc_set_size_Fat32(fileid, oldsize);
 			return r;
 		}
-		memcpy(va + i, Fat_buf, BY2CLUS);
+		memcpy(va + i, Fat_buf, User_BY2CLUS);
 	}
 
 	for (i = ROUND(size, BY2PG); i < ROUND(oldsize, BY2PG); i += BY2PG) {
@@ -456,6 +515,11 @@ int remove(const char *path) {
 	}
 	/* Exercise 5.13: Your code here. */
 	return fsipc_remove(path);
+}
+
+
+int removeAt(int fd, const char *path) {
+	return fsipc_removeat_Fat32(fd, path);
 }
 
 // Overview:

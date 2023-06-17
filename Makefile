@@ -76,6 +76,8 @@ clean:
 	done
 	rm -rf *.o *~ $(target_dir) include/generated
 	find . -name '*.objdump' -exec rm {} ';'
+	dd if=/dev/zero of=myFS/fat.img bs=33k count=1024
+	mformat -i myFS/fat.img -F ::
 
 ifneq ($(prog),)
 dbg:
@@ -95,3 +97,4 @@ run:
 objdump:
 	@find * \( -name '*.b' -o -path $(mos_elf) \) -exec sh -c \
 	'$(CROSS_COMPILE)objdump {} -aldS > {}.objdump && echo {}.objdump' ';'
+

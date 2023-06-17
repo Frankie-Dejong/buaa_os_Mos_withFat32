@@ -8,19 +8,20 @@ void debugfn(char *s, int n)
     debugf("\n");
 }
 
-char *fat_dir1 = ":/test_directory_1";
-char *fat_dir2 = ":/test_directory_2";
-char *fat_dir3 = ":/test_directory_1/test_directory_3";
-char *fat_dir4 = ":/test_directory_1/test_directory_3/test_directory_4";
-char *fat_file0 = ":/test_fat_file0";
-char *fat_file1 = ":/test_directory_1/test_fat_file1";
-char *fat_file2 = ":/test_directory_1/test_fat_file2";
-char *fat_file3 = ":/test_directory_1/test_fat_file3";
-char *fat_file4 = ":/test_directory_2/test_fat_file4";
-char *fat_file5 = ":/test_directory_1/test_directory_3/test_fat_file5";
-char *fat_file6 = ":/test_directory_1/test_directory_3/test_fat_file6";
-char *fat_file7 = ":/test_directory_1/test_directory_3/test_directory_4/test_fat_file7";
-char *fat_file8 = ":/test_directory_1/test_directory_3/test_directory_4/test_fat_file8";
+char *fat_dir0 = ":/test_directory_strong_check";
+char *fat_dir1 = ":/test_directory_strong_check/test_directory_1";
+char *fat_dir2 = ":/test_directory_strong_check/test_directory_2";
+char *fat_dir3 = ":/test_directory_strong_check/test_directory_1/test_directory_3";
+char *fat_dir4 = ":/test_directory_strong_check/test_directory_1/test_directory_3/test_directory_4";
+char *fat_file0 = ":/test_directory_strong_check/test_fat_file0";
+char *fat_file1 = ":/test_directory_strong_check/test_directory_1/test_fat_file1";
+char *fat_file2 = ":/test_directory_strong_check/test_directory_1/test_fat_file2";
+char *fat_file3 = ":/test_directory_strong_check/test_directory_1/test_fat_file3";
+char *fat_file4 = ":/test_directory_strong_check/test_directory_2/test_fat_file4";
+char *fat_file5 = ":/test_directory_strong_check/test_directory_1/test_directory_3/test_fat_file5";
+char *fat_file6 = ":/test_directory_strong_check/test_directory_1/test_directory_3/test_fat_file6";
+char *fat_file7 = ":/test_directory_strong_check/test_directory_1/test_directory_3/test_directory_4/test_fat_file7";
+char *fat_file8 = ":/test_directory_strong_check/test_directory_1/test_directory_3/test_directory_4/test_fat_file8";
 
 
 char *message0 = "this is the message of test\n";
@@ -35,7 +36,7 @@ char *message8 = "The lavender haze\nI just wanna stay\nI just wanna stay\nIn th
 
 char buf[10][500];
 
-int fdList[13], top = -1;
+int fdList[20], top = -1;
 int build_dir(char *name) {
     int r = open(name, O_MKDIR);
     fdList[++top] = r;
@@ -53,6 +54,7 @@ int open_file(char *name) {
 }
 void test_build() {
     top = -1;
+    user_assert(build_dir(fat_dir0) >= 0);
     user_assert(build_dir(fat_dir1) >= 0);
     user_assert(build_dir(fat_dir2) >= 0);
     user_assert(build_dir(fat_dir3) >= 0);
@@ -69,7 +71,7 @@ void test_build() {
 }
 
 void test_write() {
-    int i = 4;
+    int i = 5;
     user_assert(write(fdList[i ++], message0, strlen(message0)) >= 0);
     user_assert(write(fdList[i ++], message1, strlen(message1)) >= 0);
     user_assert(write(fdList[i ++], message2, strlen(message2)) >= 0);
@@ -83,6 +85,7 @@ void test_write() {
 
 void test_reopen() {
     top = -1;
+    user_assert(open_file(fat_dir0) >= 0);
     user_assert(open_file(fat_dir1) >= 0);
     user_assert(open_file(fat_dir2) >= 0);
     user_assert(open_file(fat_dir3) >= 0);
@@ -100,7 +103,7 @@ void test_reopen() {
 
 
 void test_read() {
-    int i = 4;
+    int i = 5;
     int j = 0;
     user_assert(read(fdList[i ++], buf[j ++], strlen(message0)) >= 0);
     user_assert(strcmp(message0, buf[0]) == 0);
@@ -147,6 +150,7 @@ void show_lyrics() {
     for(int i = 0;i <= 8;i ++) {
         debugf("%s", buf[i]);
     }
+    debugf("================================\n");
 }
 int main()
 {
@@ -159,7 +163,7 @@ int main()
     test_reopen();
     debugf("test reopen passed\n");
     test_read();
-    debugf("test read passes\n");
+    debugf("test read passed\n");
     test_close();
     debugf("test close again passed\n");
     test_remove();
@@ -168,8 +172,5 @@ int main()
     show_lyrics();
     return 0;
 }
-
-
-
 
 

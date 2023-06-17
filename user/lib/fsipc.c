@@ -205,6 +205,16 @@ int fsipc_remove_Fat32(const char *path) {
 	return fsipc(FSREQ_FAT | FSREQ_REMOVE, req, 0, 0);
 }
 
+int fsipc_removeat_Fat32(int fd, const char *path) {
+	if (strlen(path) == 0 || strlen(path) > MAXPATHLEN) {
+		return -E_BAD_PATH;
+	}
+	struct Fsreq_removeat *req = (struct Fsreq_removeat *)fsipcbuf;
+	strcpy(req->req_path, path);
+	req->dir_fileid = fd;
+	return fsipc(FSREQ_REMOVEAT, req, 0, 0);
+}
+
 // Overview:
 //  Ask the file server to update the disk by writing any dirty
 //  blocks in the buffer cache.
@@ -220,4 +230,24 @@ int fsipc_flush_Fat32(u_int fileid, u_int offset, u_int n, void *src) {
 	req->req_offset = offset;
 	memcpy(req->content, src, n);
 	return fsipc(FSREQ_FLUSH_FAT, req, 0, 0);
+}
+
+int fsipc_openat_Fat32(u_int dir_fileid, const char *path, u_int omode, struct Fd *fd) {
+	u_int perm;
+	struct Fsreq_openat *req;
+
+	req = (struct Fsreq_openat *)fsipcbuf;
+
+	if(strlen(path) >= MAXPATHLEN) {
+		return -E_BAD_PATH;
+	}
+
+	strcpy((char *)req->req_path, path);
+	req->dir_fileid = dir_fileid;
+	req->req_omode = omode;
+	return fsipc(FSREQ_OPENAT, req, fd, &perm);
+}
+
+int fsipc_getBY2CLUS() {
+	return fsipc(FSREQ_GET, 0, 0, 0);
 }
