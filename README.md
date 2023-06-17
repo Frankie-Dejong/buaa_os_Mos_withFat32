@@ -379,7 +379,7 @@ curenv:    NULL
 cur_pgdir: 83ffc000
 ```
 
-![截屏2023-06-17 21.21.31.png](/Users/mac/Downloads/截屏2023-06-17 21.21.31.png)
+![截屏2023-06-17 21.21.31.png](https://github.com/Frankie-Dejong/buaa_os_Mos_withFat32/blob/main/images/截屏2023-06-17%2021.21.31.png?raw=true)
 
 ## lab5_challenge_at
 
