@@ -1,7 +1,5 @@
 # Lab5 Challenge Mos with Fat32
 
-author: 21373157 马瑀阔
-
 date: 2023/6/16
 
 # 实现功能
@@ -601,12 +599,6 @@ cur_pgdir: 83ffc000
 ![截屏2023-06-17 21.13.26.png](/Users/mac/Downloads/截屏2023-06-17 21.13.26.png)
 
 # 附录
-
-## 完整代码
-
-[gitos](http://git.os.buaa.edu.cn/os2023/21373157)
-
-[GitHub - Frankie-Dejong/buaa_os_Mos_withFat32: Mos which support Fat32 File System, will be maintained to be better](https://github.com/Frankie-Dejong/buaa_os_Mos_withFat32)
 
 ## 部分代码
 
