@@ -122,7 +122,7 @@ Fat32文件系统结构中，每个目录下的所有文件和目录的目录项
 
 Fat32对于长文件名，选择将其名称连续的存放于目录控制项之前，即
 
-![截屏2023-06-16 23.01.46.png](Lab5%20Challenge%20Mos%20with%20Fat32%201ecee693a87e4c92810d0f2215a221f0/%25E6%2588%25AA%25E5%25B1%258F2023-06-16_23.01.46.png)
+![截屏2023-06-16 23.01.46.png](https://github.com/Frankie-Dejong/buaa_os_Mos_withFat32/blob/main/images/截屏2023-06-16%2023.01.46.png?raw=true)
 
 为删除、查找方便，我们保证在申请长文件名目录项时，其所有的long name directory entry和对应的short name directory entry应当被存放在同一个簇当中，而不能跨簇存放，且所有的长文件名目录项必须紧跟一个短文件名目录项
 
@@ -305,7 +305,7 @@ openat,removeAt函数逻辑与open和removeat相仿，区别为依靠fd参数寻
 int r = open(":/test_long_name_file", O_CREAT | O_RDWR);
 ```
 
-![截屏2023-06-17 21.00.59.png](/Users/mac/Library/Application Support/typora-user-images/截屏2023-06-17 21.24.42.png)
+![截屏2023-06-17 21.00.59.png](https://github.com/Frankie-Dejong/buaa_os_Mos_withFat32/blob/main/images/截屏2023-06-17%2021.24.42.png?raw=true)
 
 # 正确结果展示
 
