@@ -596,7 +596,7 @@ curenv:    NULL
 cur_pgdir: 83ffc000
 ```
 
-![截屏2023-06-17 21.13.26.png](/Users/mac/Downloads/截屏2023-06-17 21.13.26.png)
+![截屏2023-06-17 21.13.26.png](https://github.com/Frankie-Dejong/buaa_os_Mos_withFat32/blob/main/images/截屏2023-06-17%2021.13.26.png?raw=true)
 
 # 附录
 
