@@ -76,7 +76,9 @@ int getFileName(char *user_name, char *c1) {
     return 0;
 }
 
-
+int fat_get_clus() {
+    return BY2SECT * fat_super.FAT_SECPClus;
+}
 
 unsigned char ChkSum (unsigned char *pFcbName) 
 { 
@@ -346,6 +348,7 @@ void fat_readBPB()
     
     user_assert(fat_super.FAT_endNumber == FAT_BPB_END_NUMBER);
     user_assert(strcmp(fat_super.FSType, "FAT32   ") == 0);
+    debugf("There is 0x%x SECTORS in ONE CLUSTER\n", fat_super.FAT_SECPClus);
     debugf("fat_readBPB is good\n");
     return 0;
 }
@@ -382,7 +385,7 @@ void read_FAT() {
     u_int i;
     user_assert(fat_super.FAT_endNumber == FAT_BPB_END_NUMBER);
     user_assert(strcmp(fat_super.FSType, "FAT32   ") == 0);
-    u_int FAT1ClusNo = fat_super.numOfReserved / SECT2CLUS;
+    u_int FAT1ClusNo = fat_super.numOfReserved;
     u_int total = fat_super.FAT_SECPClus / SECT2CLUS;
     if(fat_super.numOfFats == 2) {
         for(i = 0;i < total;i ++) {

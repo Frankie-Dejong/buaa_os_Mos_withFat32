@@ -57,3 +57,4 @@ int fat_file_remove(char *path);
 int fat_file_openat(struct Fat32_Dir *dir, char *path, struct Fat32_Dir **pfile, int omode);
 int fat_file_removeat(struct Fat32_Dir *par_dir, char *path);
 void fat_fs_sync(void);
+int fat_get_clus();

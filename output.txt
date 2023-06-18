@@ -26,30 +26,90 @@ pmap.c:	 mips vm init success
 FS is running
 superblock is good
 read_bitmap is good
+There is 0x1 SECTORS in ONE CLUSTER
 fat_readBPB is good
 read_FAT is good
 read_FSInfo is good
 ================================
-Total free Cluster Count:0x000103cd
-Next Available Cluster Number:0x00000003
+Total free Cluster Count:0x000103c4
+Next Available Cluster Number:0x00000008
 ================================
 read & write cluster is good
 ================================
 fat32_init success!
 ================================
-test_build passed
+test build passed
 test write passed
-test read passed
 test close passed
+test reopen passed
+test read passed
+test close again passed
+test remove passed
+test challenge passed!
 ================================
-这世上真话本就不多, 一位女子的脸红便胜过一大段对白
-可后来有了胭脂, 便分不清是真情还是假意
+this is the message of test
+this is the second message of test
+Now this is the lyrics
+================================
+Lavender Haze
+
+Taylor Swift
+
+Meet me at midnight
+Oooh oooh oooh woah
+Oooh oooh oooh woah
+Staring at the ceiling with you
+Oh you don't ever say too much
+And you don't really read into
+My melancholia
+I been under scrutiny (yeah oh yeah)
+You handle it beautifully (yeah oh yeah)
+All this **** is new to me (yeah oh yeah)
+I feel the lavender haze creeping up on me
+Surreal
+I'm damned if I do give a damn what people say
+No deal
+The 1950s **** they want from me
+I just wanna stay in that lavender haze
+Oooh oooh oooh woah
+Oooh oooh oooh woah
+All they keep asking me (all they keep asking me)
+Is if I'm gonna be your bride
+Surreal
+I'm damned if I do give a damn what people say
+No deal
+The 1950s **** they want from me
+I just wanna stay in that lavender haze
+(Oooh Oooh Oooh Woah)
+The lavender haze
+Talk your talk and go viral
+I just need this love spiral
+Get it off your chest
+Get it off my desk
+Talk your talk and go viral
+I just need this love spiral
+Get it off your chest
+Get it off my desk
+I feel the lavender haze creeping up on me
+Surreal
+I'm damned if I do give a damn what people say
+No deal
+The 1950s **** they want from me
+I just wanna stay in that lavender haze
+Oooh oooh oooh woah
+Oooh oooh oooh woah
+Get it off your chest
+Get it off my desk
+The lavender haze
+I just wanna stay
+I just wanna stay
+In that lavender haze
 ================================
 [00000800] destroying 00000800
 [00000800] free env 00000800
 i am killed ... 
 panic at sched.c:40 (schedule): NO RUNNABLE ENV
 ra:    80016b08  sp:  803ffe80  Status: 0008100c
-Cause: 00000020  EPC: 004050c0  BadVA:  00411eac
+Cause: 00001020  EPC: 00406550  BadVA:  7fd7f000
 curenv:    NULL
 cur_pgdir: 83ffc000

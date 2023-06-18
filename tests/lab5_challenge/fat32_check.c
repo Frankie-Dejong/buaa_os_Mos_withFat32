@@ -8,6 +8,8 @@ void debugfn(char *s, int n)
     debugf("\n");
 }
 
+
+
 char *fat_dir0 = ":/test_directory_strong_check";
 char *fat_dir1 = ":/test_directory_strong_check/test_directory_1";
 char *fat_dir2 = ":/test_directory_strong_check/test_directory_2";

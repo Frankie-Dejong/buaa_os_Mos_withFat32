@@ -107,7 +107,7 @@ struct Fat32_LDIR {
 
 
 // #define BY2CLUS (BY2SECT * SECT2CLUS)
-#define BY2CLUS BY2SECT
+#define BY2CLUS (BY2SECT * SECT2CLUS)
 #define CLUS2Page (BY2PG / BY2CLUS)
 #define EOF_Fat32 0xfffffff 
 #define ATTR_READ_ONLY 0x01 

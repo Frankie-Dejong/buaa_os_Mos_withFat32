@@ -224,6 +224,8 @@ void serve_map_Fat32(u_int envid, struct Fsreq_map *rq) {
 		return;
 	}
 
+	u_int SECT2CLUS = fat_get_clus() / BY2SECT;
+
 	fileClusNo = rq->req_offset / BY2CLUS;
 
 	if((r = fat_file_get_cluster(pOpen->o_file, fileClusNo, &Fat32_buf)) < 0) {
@@ -421,7 +423,8 @@ void serve_openat_Fat32(u_int envid, struct Fsreq_openat *rq) {
 
 
 void serve_BPB(u_int envid) {
-	ipc_send(envid, BY2CLUS, 0, 0);
+	int r = fat_get_clus();
+	ipc_send(envid, r, 0, 0);
 }
 
 
